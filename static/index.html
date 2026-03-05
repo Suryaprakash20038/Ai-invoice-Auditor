@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Smart Invoice Auditor</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="bg-light">
+
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-primary">AI-Powered Smart Invoice Auditor</h1>
+            <p class="lead">Upload an invoice to automatically extract details and verify calculations.</p>
+        </div>
+
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-5 text-center file-upload-wrapper" id="dropArea">
+                        <div class="mb-3">
+                            <span style="font-size: 3rem;">📁</span>
+                        </div>
+                        <h5 class="card-title">Drag & Drop your invoice here</h5>
+                        <p class="text-muted">or click to browse (JPG, PNG, PDF max 5MB)</p>
+                        <input type="file" id="fileInput" class="d-none" accept=".jpg,.jpeg,.png,.pdf">
+                        <button class="btn btn-primary px-4 py-2 mt-2"
+                            onclick="document.getElementById('fileInput').click()">Select File</button>
+                        <div id="uploadStatus" class="mt-3 fw-medium"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row d-none" id="dashboard">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold">Document Preview</h5>
+                    </div>
+                    <div class="card-body text-center d-flex align-items-center justify-content-center">
+                        <img id="previewImage" class="img-fluid rounded border"
+                            style="max-height: 400px; display: none;" alt="Preview">
+                        <div id="pdfPreviewContainer" class="w-100" style="display: none; height: 500px;">
+                            <iframe id="pdfPreviewFrame" class="w-100 h-100 border rounded" src=""></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="fw-bold">Validation Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="statusIndicator" class="alert mb-4 fw-bold shadow-sm" role="alert"
+                            style="display: none;">
+                        </div>
+
+                        <div id="resultCard" class="d-none animate-fade-in">
+                            <div class="card border-0 bg-light shadow-sm mb-4 rounded-4"
+                                style="background: linear-gradient(145deg, #f8f9fa, #e9ecef);">
+                                <div class="card-body p-4">
+                                    <div class="row align-items-center mb-3">
+                                        <div class="col-4 text-muted fw-bold text-uppercase"
+                                            style="font-size: 0.85rem; letter-spacing: 1px;">Vendor / Issuer</div>
+                                        <div class="col-8 fw-bold text-dark fs-5 text-end" id="resVendor">-</div>
+                                    </div>
+                                    <hr class="text-muted opacity-25">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-muted fw-bold text-uppercase"
+                                            style="font-size: 0.85rem; letter-spacing: 1px;">Invoice Date</div>
+                                        <div class="col-8 fw-semibold text-secondary text-end fs-6" id="resDate">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                                <h6 class="fw-bold text-secondary text-uppercase mb-0" style="letter-spacing: 1px;"><i
+                                        class="bi bi-list-ul me-2"></i>Line Items</h6>
+                            </div>
+
+                            <div class="table-responsive shadow-sm rounded-4 overflow-hidden mb-3 border">
+                                <table class="table table-hover table-borderless align-middle mb-0">
+                                    <thead class="table-dark"
+                                        style="background: linear-gradient(90deg, #212529, #343a40);">
+                                        <tr>
+                                            <th class="py-3 px-3">Description</th>
+                                            <th class="py-3 px-3 text-center">Qty</th>
+                                            <th class="py-3 px-3 text-end">Price</th>
+                                            <th class="py-3 px-3 text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resItems" class="bg-white">
+                                    </tbody>
+                                    <tfoot style="border-top: 2px solid #dee2e6;">
+                                        <tr class="bg-white">
+                                            <td colspan="3" class="text-end fw-bold text-muted py-3">Extracted Total:
+                                            </td>
+                                            <td class="text-end fw-bold py-3 text-dark fs-5" id="resExtractedTotal">
+                                            </td>
+                                        </tr>
+                                        <tr id="calcTotalRow" class="py-3 transition-all">
+                                            <td colspan="3" class="text-end fw-bolder py-3" style="font-size: 1.1rem;">
+                                                Calculated Total:</td>
+                                            <td class="text-end fw-bolder py-3" id="resCalculatedTotal"
+                                                style="font-size: 1.25rem;"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="jsonFallback"
+                            class="extracted-data p-3 bg-dark text-light rounded font-monospace small d-none shadow"
+                            style="max-height: 250px; overflow-y: auto; border: 1px solid #444;">
+                            <pre id="jsonOutput" class="mb-0 text-break"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js?v=2"></script>
+</body>
+
+</html>
