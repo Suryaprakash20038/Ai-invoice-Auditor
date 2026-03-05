@@ -19,29 +19,31 @@ app.add_middleware(
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-
+# static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# homepage
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     with open("static/index.html", "r", encoding="utf-8") as f:
         return f.read()
 
+
 @app.post("/upload")
 async def upload_invoice(file: UploadFile = File(...)):
-    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.pdf')):
-        raise HTTPException(status_code=400, detail="Only JPG, PNG, and PDF files are allowed.")
     
+    if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.pdf')):
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, and PDF allowed")
+
     contents = await file.read()
+
     if len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size exceeds the 5MB limit.")
-        
-        
+        raise HTTPException(status_code=400, detail="File exceeds 5MB limit")
+
     try:
         extracted_data = process_document(contents, file.filename)
-        
         result = validate_invoice(extracted_data)
-        
         return result
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
